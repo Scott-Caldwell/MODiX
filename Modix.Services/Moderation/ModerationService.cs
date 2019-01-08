@@ -13,6 +13,7 @@ using Modix.Data.Repositories;
 using Modix.Services.Core;
 using Serilog;
 using Discord.Net;
+using Modix.Common.Results;
 
 namespace Modix.Services.Moderation
 {
@@ -57,7 +58,7 @@ namespace Modix.Services.Moderation
         /// <param name="reason">The value to use for <see cref="ModerationActionEntity.Reason"/></param>
         /// <param name="duration">The value to use for <see cref="InfractionEntity.Duration"/>.</param>
         /// <returns>A <see cref="Task"/> which will complete when the operation has completed.</returns>
-        Task CreateInfractionAsync(InfractionType type, ulong subjectId, string reason, TimeSpan? duration);
+        Task<Result> CreateInfractionAsync(InfractionType type, ulong subjectId, string reason, TimeSpan? duration);
 
         /// <summary>
         /// Marks an existing, active, infraction of a given type, upon a given user, as rescinded.
@@ -334,7 +335,7 @@ namespace Modix.Services.Moderation
         }
 
         /// <inheritdoc />
-        public async Task CreateInfractionAsync(InfractionType type, ulong subjectId, string reason, TimeSpan? duration)
+        public async Task<Result> CreateInfractionAsync(InfractionType type, ulong subjectId, string reason, TimeSpan? duration)
         {
             AuthorizationService.RequireAuthenticatedGuild();
             AuthorizationService.RequireAuthenticatedUser();

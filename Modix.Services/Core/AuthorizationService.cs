@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Linq;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -10,6 +10,7 @@ using Discord;
 using Modix.Data.Models.Core;
 using Modix.Data.Repositories;
 using Modix.Services.Utilities;
+using Modix.Common.Results;
 
 namespace Modix.Services.Core
 {
@@ -173,6 +174,12 @@ namespace Modix.Services.Core
         /// </summary>
         /// <param name="claims">A set of claims to be checked against <see cref="CurrentClaims"/>.</param>
         void RequireClaims(params AuthorizationClaim[] claims);
+
+        /// <summary>
+        /// Requires that the given claim be present for the current request.
+        /// </summary>
+        /// <param name="claim">A claim to be checked against <see cref="CurrentClaims"/>.</param>
+        Result RequireClaim(AuthorizationClaim claim);
     }
 
     /// <inheritdoc />
@@ -491,6 +498,12 @@ namespace Modix.Services.Core
                 // TODO: Booooo for exception-based flow control
                 throw new InvalidOperationException($"The current operation could not be authorized. The following claims were missing: {string.Join(", ", missingClaims)}");
         }
+
+        /// <inheritdoc />
+        public Result RequireClaim(AuthorizationClaim claim)
+            => CurrentClaims.Contains(claim)
+                ? Result.Success
+                : Result.FromFault(new MissingClaimFault(claim));
 
         /// <summary>
         /// An <see cref="IDiscordClient"/> for interacting with the Discord API.
