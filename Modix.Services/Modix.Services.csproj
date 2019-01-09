@@ -14,6 +14,7 @@
     <PackageReference Include="Serilog" Version="2.7.1" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Modix.Common\Modix.Common.csproj" />
     <ProjectReference Include="..\Modix.Data\Modix.Data.csproj" />
   </ItemGroup>
   <ItemGroup>

@@ -27,6 +27,13 @@ namespace Modix.Common.Results
         public static Result FromFault(IFault fault)
             => new Result(fault);
 
+        public bool TryGetFaulted(out Result result)
+        {
+            result = this;
+
+            return IsFaulted;
+        }
+
         public Result ContinueWith(Action continuation)
         {
             if (IsFaulted)

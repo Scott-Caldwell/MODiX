@@ -337,11 +337,11 @@ namespace Modix.Services.Moderation
         /// <inheritdoc />
         public async Task<Result> CreateInfractionAsync(InfractionType type, ulong subjectId, string reason, TimeSpan? duration)
         {
-            AuthorizationService.RequireAuthenticatedGuild();
-            AuthorizationService.RequireAuthenticatedUser();
-            AuthorizationService.RequireClaims(_createInfractionClaimsByType[type]);
+            if (AuthorizationService.RequireClaim(_createInfractionClaimsByType[type]).TryGetFaulted(out var faulted))
+                return faulted;
 
-            await RequireSubjectRankLowerThanModeratorRankAsync(AuthorizationService.CurrentGuildId.Value, subjectId);
+            if ((await RequireModeratorOutranksSubjectAsync(AuthorizationService.CurrentGuildId.Value, subjectId)).TryGetFaulted(out faulted))
+                return faulted;
 
             var guild = await DiscordClient.GetGuildAsync(AuthorizationService.CurrentGuildId.Value);
 
@@ -740,7 +740,15 @@ namespace Modix.Services.Moderation
             if (!await DoesModeratorOutrankUserAsync(guildId, AuthorizationService.CurrentUserId.Value, subjectId))
                 throw new InvalidOperationException("Cannot moderate users that have a rank greater than or equal to your own.");
         }
-            
+
+        private async Task<Result> RequireModeratorOutranksSubjectAsync(ulong guildId, ulong subjectId)
+        {
+            if (!await DoesModeratorOutrankUserAsync(guildId, AuthorizationService.CurrentUserId.Value, subjectId))
+                return Result.FromFault(new OutrankFault());
+
+            return Result.Success;
+        }
+
         private static readonly OverwritePermissions _mutePermissions
             = new OverwritePermissions(
                 sendMessages: PermValue.Deny,
