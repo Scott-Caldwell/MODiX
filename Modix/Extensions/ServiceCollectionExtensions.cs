@@ -13,6 +13,7 @@ using Modix.Services.Adapters;
 using Modix.Services.AutoCodePaste;
 using Modix.Services.BehaviourConfiguration;
 using Modix.Services.CodePaste;
+using Modix.Services.Coliru;
 using Modix.Services.CommandHelp;
 using Modix.Services.Core;
 using Modix.Services.DocsMaster;
@@ -65,7 +66,8 @@ namespace Microsoft.Extensions.DependencyInjection
                 .AddAutoCodePaste()
                 .AddCommandHelp()
                 .AddGuildStats()
-                .AddMentions();
+                .AddMentions()
+                .AddColiru();
 
             services.AddSingleton<IBehavior, DiscordAdapter>();
             services.AddScoped<IQuoteService, QuoteService>();
