@@ -82,6 +82,29 @@ namespace Modix.Modules
             await ModerationService.RescindInfractionAsync(InfractionType.Mute, subject.Id);
         }
 
+        [Command("softban")]
+        [Summary("Softbans a user.")]
+        public async Task SoftbanAsync(
+            [Summary("The user to be softbanned.")]
+                DiscordUserEntity subject,
+            [Summary("The reason for the softban.")]
+            [Remainder]
+                string reason)
+        {
+            await ModerationService.CreateInfractionAsync(Context.Guild.Id, Context.User.Id, InfractionType.Softban, subject.Id, reason, null);
+            await Context.AddConfirmation();
+        }
+
+        [Command("unsoftban")]
+        [Summary("Remove a softban that has been applied to a user.")]
+        public async Task UnsoftbanAsync(
+            [Summary("The user to be unsoftbanned.")]
+                DiscordUserEntity subject)
+        {
+            await ModerationService.RescindInfractionAsync(InfractionType.Softban, subject.Id);
+            await Context.AddConfirmation();
+        }
+
         [Command("ban")]
         [Alias("forceban")]
         [Summary("Ban a user from the current guild.")]

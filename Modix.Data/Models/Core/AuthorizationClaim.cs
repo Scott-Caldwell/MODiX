@@ -34,6 +34,11 @@ namespace Modix.Data.Models.Core
         [ClaimInfo(ModerationActions, "Authorizes a request to mute a user.")]
         ModerationMute,
         /// <summary>
+        /// Authorizes a request to softban a user.
+        /// </summary>
+        [ClaimInfo(ModerationActions, "Authorizes a request to softban a user.")]
+        ModerationSoftban,
+        /// <summary>
         /// Authorizes a request to ban a user.
         /// </summary>
         [ClaimInfo(ModerationActions, "Authorizes a request to ban a user.")]

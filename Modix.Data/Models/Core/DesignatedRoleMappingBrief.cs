@@ -25,6 +25,14 @@ namespace Modix.Data.Models.Core
         /// </summary>
         public DesignatedRoleType Type { get; set; }
 
+        internal static DesignatedRoleMappingBrief FromEntity(DesignatedRoleMappingEntity entity)
+            => new DesignatedRoleMappingBrief()
+            {
+                Id = entity.Id,
+                Role = GuildRoleBrief.FromEntity(entity.Role),
+                Type = entity.Type,
+            };
+
         [ExpansionExpression]
         internal static readonly Expression<Func<DesignatedRoleMappingEntity, DesignatedRoleMappingBrief>> FromEntityProjection
             = entity => new DesignatedRoleMappingBrief()

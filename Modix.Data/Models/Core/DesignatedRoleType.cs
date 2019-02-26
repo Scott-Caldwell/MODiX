@@ -17,5 +17,9 @@
         /// Defines a role whose mentionability is restricted in MODiX.
         /// </summary>
         RestrictedMentionability,
+        /// <summary>
+        /// Defines a role that is assigned to softbanned users.
+        /// </summary>
+        Softbanned,
     }
 }

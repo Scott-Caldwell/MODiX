@@ -4,6 +4,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using Modix.Data.Models.Core;
 using Modix.Data.Repositories;
+using Modix.Services.Messages.Modix;
+using Modix.Services.NotificationDispatch;
 
 namespace Modix.Services.Core
 {
@@ -68,10 +70,14 @@ namespace Modix.Services.Core
 
     public class DesignatedRoleService : IDesignatedRoleService
     {
-        public DesignatedRoleService(IAuthorizationService authorizationService, IDesignatedRoleMappingRepository designatedRoleMappingRepository)
+        public DesignatedRoleService(
+            IAuthorizationService authorizationService,
+            IDesignatedRoleMappingRepository designatedRoleMappingRepository,
+            INotificationDispatchService notificationDispatchService)
         {
             AuthorizationService = authorizationService;
             DesignatedRoleMappingRepository = designatedRoleMappingRepository;
+            NotificationDispatchService = notificationDispatchService;
         }
 
         /// <inheritdoc />
@@ -91,7 +97,7 @@ namespace Modix.Services.Core
                 }))
                     throw new InvalidOperationException($"Role {roleId} already has a {type} designation");
 
-                await DesignatedRoleMappingRepository.CreateAsync(new DesignatedRoleMappingCreationData()
+                var mapping = await DesignatedRoleMappingRepository.CreateAsync(new DesignatedRoleMappingCreationData()
                 {
                     GuildId = guildId,
                     RoleId = roleId,
@@ -100,6 +106,12 @@ namespace Modix.Services.Core
                 });
 
                 transaction.Commit();
+
+                await NotificationDispatchService.PublishScopedAsync(new DesignatedRoleMappingAdded()
+                {
+                    GuildId = guildId,
+                    DesignatedRoleMapping = mapping,
+                });
             }
         }
 
@@ -111,18 +123,31 @@ namespace Modix.Services.Core
 
             using (var transaction = await DesignatedRoleMappingRepository.BeginDeleteTransactionAsync())
             {
-                var deletedCount = await DesignatedRoleMappingRepository.DeleteAsync(new DesignatedRoleMappingSearchCriteria()
+                var criteria = new DesignatedRoleMappingSearchCriteria()
                 {
                     GuildId = guildId,
                     RoleId = roleId,
                     Type = type,
                     IsDeleted = false
-                }, AuthorizationService.CurrentUserId.Value);
+                };
+
+                var mappings = await DesignatedRoleMappingRepository.SearchBriefsAsync(criteria);
+
+                var deletedCount = await DesignatedRoleMappingRepository.DeleteAsync(criteria, AuthorizationService.CurrentUserId.Value);
 
                 if (deletedCount == 0)
                     throw new InvalidOperationException($"Role {roleId} does not have a {type} designation");
 
                 transaction.Commit();
+
+                foreach (var mapping in mappings)
+                {
+                    await NotificationDispatchService.PublishScopedAsync(new DesignatedRoleMappingAdded()
+                    {
+                        GuildId = guildId,
+                        DesignatedRoleMapping = mapping,
+                    });
+                }
             }
         }
 
@@ -134,16 +159,29 @@ namespace Modix.Services.Core
 
             using (var transaction = await DesignatedRoleMappingRepository.BeginDeleteTransactionAsync())
             {
-                var deletedCount = await DesignatedRoleMappingRepository.DeleteAsync(new DesignatedRoleMappingSearchCriteria()
+                var criteria = new DesignatedRoleMappingSearchCriteria()
                 {
                     Id = id,
                     IsDeleted = false
-                }, AuthorizationService.CurrentUserId.Value);
+                };
+
+                var mappings = await DesignatedRoleMappingRepository.SearchBriefsAsync(criteria);
+
+                var deletedCount = await DesignatedRoleMappingRepository.DeleteAsync(criteria, AuthorizationService.CurrentUserId.Value);
 
                 if (deletedCount == 0)
                     throw new InvalidOperationException($"No role assignment exists with id {id}");
 
                 transaction.Commit();
+
+                foreach (var mapping in mappings)
+                {
+                    await NotificationDispatchService.PublishScopedAsync(new DesignatedRoleMappingAdded()
+                    {
+                        GuildId = AuthorizationService.CurrentGuildId.Value,
+                        DesignatedRoleMapping = mapping,
+                    });
+                }
             }
         }
 
@@ -183,5 +221,10 @@ namespace Modix.Services.Core
         /// An <see cref="IDesignatedRoleMappingRepository"/> for storing and retrieving role designation data.
         /// </summary>
         internal protected IDesignatedRoleMappingRepository DesignatedRoleMappingRepository { get; }
+
+        /// <summary>
+        /// A service to handle dispatching notifications.
+        /// </summary>
+        internal protected INotificationDispatchService NotificationDispatchService { get; }
     }
 }

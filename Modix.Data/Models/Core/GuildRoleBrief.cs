@@ -25,13 +25,16 @@ namespace Modix.Data.Models.Core
         /// </summary>
         public int Position { get; set; }
 
-        [ExpansionExpression]
-        internal static readonly Expression<Func<GuildRoleEntity, GuildRoleBrief>> FromEntityProjection
-            = entity => new GuildRoleBrief()
+        internal static GuildRoleBrief FromEntity(GuildRoleEntity entity)
+            => new GuildRoleBrief()
             {
                 Id = entity.RoleId,
                 Name = entity.Name,
                 Position = entity.Position
             };
+
+        [ExpansionExpression]
+        internal static readonly Expression<Func<GuildRoleEntity, GuildRoleBrief>> FromEntityProjection
+            = entity => FromEntity(entity);
     }
 }

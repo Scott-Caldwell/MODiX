@@ -43,6 +43,13 @@ namespace Modix.Services.Moderation
         Task AutoRescindExpiredInfractions();
 
         /// <summary>
+        /// Automatically persists roles on users who have rejoined the guild.
+        /// </summary>
+        /// <param name="user">The user who joined the guild.</param>
+        /// <returns>A <see cref="Task"/> that will complete when the operation has completed.</returns>
+        Task AutoPersistRolesAsync(IGuildUser user);
+
+        /// <summary>
         /// Removes all moderation configuration settings for a guild, by deleting all of its <see cref="ModerationMuteRoleMappingEntity"/> entries.
         /// </summary>
         /// <param name="guild">The guild to be un-configured.</param>
@@ -235,6 +242,7 @@ namespace Modix.Services.Moderation
             IChannelService channelService,
             IUserService userService,
             IModerationActionRepository moderationActionRepository,
+            IDesignatedChannelMappingRepository designatedChannelMappingRepository,
             IDesignatedRoleMappingRepository designatedRoleMappingRepository,
             IInfractionRepository infractionRepository,
             IDeletedMessageRepository deletedMessageRepository,
@@ -245,6 +253,7 @@ namespace Modix.Services.Moderation
             ChannelService = channelService;
             UserService = userService;
             ModerationActionRepository = moderationActionRepository;
+            DesignatedChannelMappingRepository = designatedChannelMappingRepository;
             DesignatedRoleMappingRepository = designatedRoleMappingRepository;
             InfractionRepository = infractionRepository;
             DeletedMessageRepository = deletedMessageRepository;
@@ -257,11 +266,12 @@ namespace Modix.Services.Moderation
             AuthorizationService.RequireAuthenticatedUser();
             AuthorizationService.RequireClaims(AuthorizationClaim.DesignatedRoleMappingCreate);
 
-            await SetUpMuteRole(guild);
-            await SetUpMentionableRoles(guild);
+            await SetUpMuteRoleAsync(guild);
+            await SetUpMentionableRolesAsync(guild);
+            await SetupSoftbanRolesAsync(guild);
         }
 
-        private async Task SetUpMentionableRoles(IGuild guild)
+        private async Task SetUpMentionableRolesAsync(IGuild guild)
         {
             var mentionableRoleMappings = await DesignatedRoleMappingRepository.SearchBriefsAsync(new DesignatedRoleMappingSearchCriteria
             {
@@ -297,7 +307,7 @@ namespace Modix.Services.Moderation
             }
         }
 
-        private async Task SetUpMuteRole(IGuild guild)
+        private async Task SetUpMuteRoleAsync(IGuild guild)
         {
             var muteRole = await GetOrCreateDesignatedMuteRoleAsync(guild, AuthorizationService.CurrentUserId.Value);
 
@@ -330,6 +340,41 @@ namespace Modix.Services.Moderation
                 muteRole.Name, nonCategoryChannels.Count, nonCategoryChannels.Select(c => c.Name));
         }
 
+        private async Task SetupSoftbanRolesAsync(IGuild guild)
+        {
+            var softbanRoles = await GetDesignatedSoftbanRolesAsync(guild);
+
+            await SetSoftbanRolePermissionsAsync(softbanRoles);
+
+            var nonCategoryChannels =
+                (await guild.GetChannelsAsync())
+                .Where(c => !(c is ICategoryChannel))
+                .ToList();
+
+            var setUpChannels = new List<IGuildChannel>();
+
+            try
+            {
+                foreach (var channel in nonCategoryChannels)
+                {
+                    setUpChannels.Add(channel);
+                    await ConfigureChannelSoftbanRolePermissionsAsync(channel, softbanRoles);
+                }
+            }
+            catch (HttpException ex)
+            {
+                var errorTemplate = "An exception was thrown when attempting to set up the softban roles for guild {0}, channel #{1}. " +
+                    "This is likely due to Modix not having the \"Manage Permissions\" permission - please check your server settings.";
+
+                Log.Error(ex, errorTemplate, guild.Name, setUpChannels.Last().Name);
+
+                return;
+            }
+
+            Log.Information("Successfully configured softban roles for {0} channels: {1}",
+               nonCategoryChannels.Count, nonCategoryChannels.Select(c => c.Name));
+        }
+
         /// <inheritdoc />
         public async Task AutoConfigureChannelAsync(IChannel channel)
         {
@@ -339,8 +384,10 @@ namespace Modix.Services.Moderation
             if (channel is IGuildChannel guildChannel)
             {
                 var muteRole = await GetOrCreateDesignatedMuteRoleAsync(guildChannel.Guild, AuthorizationService.CurrentUserId.Value);
-
                 await ConfigureChannelMuteRolePermissionsAsync(guildChannel, muteRole);
+
+                var softbanRoles = await GetDesignatedSoftbanRolesAsync(guildChannel.Guild);
+                await ConfigureChannelSoftbanRolePermissionsAsync(guildChannel, softbanRoles);
             }
         }
 
@@ -359,6 +406,31 @@ namespace Modix.Services.Moderation
 
             foreach(var expiredInfractionId in expiredInfractionIds)
                 await RescindInfractionAsync(expiredInfractionId, isAutoRescind: true);
+        }
+
+        /// <inheritdoc />
+        public async Task AutoPersistRolesAsync(IGuildUser user)
+        {
+            var infractions = await InfractionRepository.SearchSummariesAsync(new InfractionSearchCriteria()
+            {
+                IsDeleted = false,
+                IsRescinded = false,
+                GuildId = user.GuildId,
+                SubjectId = user.Id,
+                Types = new[] { InfractionType.Mute, InfractionType.Softban },
+            });
+
+            if (infractions.Any(x => x.Type == InfractionType.Mute))
+            {
+                await user.AddRoleAsync(
+                    await GetDesignatedMuteRoleAsync(user.Guild));
+            }
+
+            if (infractions.Any(x => x.Type == InfractionType.Softban))
+            {
+                await user.AddRolesAsync(
+                    await GetDesignatedSoftbanRolesAsync(user.Guild));
+            }
         }
 
         /// <inheritdoc />
@@ -425,7 +497,7 @@ namespace Modix.Services.Moderation
 
             using (var transaction = await InfractionRepository.BeginCreateTransactionAsync())
             {
-                if ((type == InfractionType.Mute) || (type == InfractionType.Ban))
+                if ((type == InfractionType.Mute) || (type == InfractionType.Softban) || (type == InfractionType.Ban))
                 {
                     if (await InfractionRepository.AnyAsync(new InfractionSearchCriteria()
                     {
@@ -463,6 +535,18 @@ namespace Modix.Services.Moderation
                 case InfractionType.Mute:
                     await subject.AddRoleAsync(
                         await GetDesignatedMuteRoleAsync(guild));
+                    break;
+
+                case InfractionType.Softban:
+                    var muteRole = await GetDesignatedMuteRoleAsync(guild);
+
+                    var roles = subject.RoleIds
+                        .Join(guild.Roles, s => s, r => r.Id, (s, r) => r)
+                        .Where(r => r.Id != muteRole.Id);
+
+                    await subject.RemoveRolesAsync(roles);
+                    await subject.AddRolesAsync(
+                        await GetDesignatedSoftbanRolesAsync(guild));
                     break;
 
                 case InfractionType.Ban:
@@ -803,6 +887,11 @@ namespace Modix.Services.Moderation
         internal protected IInfractionRepository InfractionRepository { get; }
 
         /// <summary>
+        /// An <see cref="IDesignatedChannelMappingRepository"/> storing and retrieving channels designated for use by the application.
+        /// </summary>
+        internal protected IDesignatedChannelMappingRepository DesignatedChannelMappingRepository { get; }
+
+        /// <summary>
         /// An <see cref="IDesignatedRoleMappingRepository"/> storing and retrieving roles designated for use by the application.
         /// </summary>
         internal protected IDesignatedRoleMappingRepository DesignatedRoleMappingRepository { get; }
@@ -816,6 +905,35 @@ namespace Modix.Services.Moderation
         /// An <see cref="IDeletedMessageBatchRepository"/> for storing and retrieving records of deleted message batches.
         /// </summary>
         internal protected IDeletedMessageBatchRepository DeletedMessageBatchRepository { get; }
+
+        private async Task<IEnumerable<IRole>> GetDesignatedSoftbanRolesAsync(IGuild guild)
+        {
+            var mappings = await DesignatedRoleMappingRepository.SearchBriefsAsync(new DesignatedRoleMappingSearchCriteria()
+            {
+                GuildId = guild.Id,
+                Type = DesignatedRoleType.Softbanned,
+                IsDeleted = false,
+            });
+
+            if (mappings is null || !mappings.Any())
+            {
+                Log.Warning("No softban roles are configured for guild \"{0}\" ({1}).", guild.Name, guild.Id);
+
+                return Enumerable.Empty<IRole>();
+            }
+
+            return guild.Roles.Join(mappings, r => r.Id, m => m.Role.Id, (r, m) => r);
+        }
+
+        private async Task SetSoftbanRolePermissionsAsync(IEnumerable<IRole> softbanRoles)
+        {
+            foreach (var softbanRole in softbanRoles.Where(x => x.Permissions.ViewChannel))
+            {
+                var permissions = softbanRole.Permissions.Modify(viewChannel: false);
+
+                await softbanRole.ModifyAsync(x => x.Permissions = permissions);
+            }
+        }
 
         private async Task ConfigureChannelMuteRolePermissionsAsync(IGuildChannel channel, IRole muteRole)
         {
@@ -865,6 +983,49 @@ namespace Modix.Services.Moderation
             }
         }
 
+        private async Task ConfigureChannelSoftbanRolePermissionsAsync(IGuildChannel channel, IEnumerable<IRole> softbanRoles)
+        {
+            var isViewable = await DesignatedChannelMappingRepository.AnyAsync(new DesignatedChannelMappingSearchCriteria()
+            {
+                GuildId = channel.GuildId,
+                ChannelId = channel.Id,
+                Type = DesignatedChannelType.SoftbanViewable,
+                IsDeleted = false,
+            });
+
+            if (isViewable)
+            {
+                await ConfigureSoftbanPermissions(_softbanViewablePermissions);
+            }
+            else
+            {
+                await ConfigureSoftbanPermissions(_softbanNonviewablePermissions);
+            }
+
+            async Task ConfigureSoftbanPermissions(OverwritePermissions overwritePermissions)
+            {
+                foreach (var softbanRole in softbanRoles)
+                {
+                    var permissionOverwrite = channel.GetPermissionOverwrite(softbanRole);
+                    if (permissionOverwrite is OverwritePermissions permissions)
+                    {
+                        if (permissions.AllowValue == overwritePermissions.AllowValue
+                            && permissions.DenyValue == overwritePermissions.DenyValue)
+                        {
+                            Log.Debug("Skipping setting softban permissions for channel #{Channel} as they're already set.", channel.Name);
+                            return;
+                        }
+
+                        Log.Debug("Removing softban permission overwrite for channel #{Channel}.", channel.Name);
+                        await channel.RemovePermissionOverwriteAsync(softbanRole);
+                    }
+
+                    await channel.AddPermissionOverwriteAsync(softbanRole, overwritePermissions);
+                    Log.Debug("Set softban permissions for role {Role} in channel #{Channel}.", softbanRole.Name, channel.Name);
+                }
+            }
+        }
+
         private async Task DoRescindInfractionAsync(InfractionSummary infraction, bool isAutoRescind = false)
         {
             if (infraction == null)
@@ -883,8 +1044,16 @@ namespace Modix.Services.Moderation
                     if (!await UserService.GuildUserExistsAsync(guild.Id, infraction.Subject.Id))
                         throw new InvalidOperationException("Cannot unmute a user who is not in the server.");
 
-                    var subject = await UserService.GetGuildUserAsync(guild.Id, infraction.Subject.Id);
-                    await subject.RemoveRoleAsync(await GetDesignatedMuteRoleAsync(guild));
+                    var mutedSubject = await UserService.GetGuildUserAsync(guild.Id, infraction.Subject.Id);
+                    await mutedSubject.RemoveRoleAsync(await GetDesignatedMuteRoleAsync(guild));
+                    break;
+
+                case InfractionType.Softban:
+                    if (!await UserService.GuildUserExistsAsync(guild.Id, infraction.Subject.Id))
+                        throw new InvalidOperationException("Cannot unsoftban a user who is not in the server.");
+
+                    var softbannedSubject = await UserService.GetGuildUserAsync(guild.Id, infraction.Subject.Id);
+                    await softbannedSubject.RemoveRolesAsync(await GetDesignatedSoftbanRolesAsync(guild));
                     break;
 
                 case InfractionType.Ban:
@@ -932,13 +1101,23 @@ namespace Modix.Services.Moderation
                 sendMessages: PermValue.Deny,
                 speak: PermValue.Deny);
 
+        private static readonly OverwritePermissions _softbanViewablePermissions
+            = new OverwritePermissions(
+                viewChannel: PermValue.Allow,
+                speak: PermValue.Deny);
+
+        private static readonly OverwritePermissions _softbanNonviewablePermissions
+            = new OverwritePermissions(
+                viewChannel: PermValue.Deny);
+
         private static readonly Dictionary<InfractionType, AuthorizationClaim> _createInfractionClaimsByType
             = new Dictionary<InfractionType, AuthorizationClaim>()
             {
-                {InfractionType.Notice, AuthorizationClaim.ModerationNote },
-                {InfractionType.Warning, AuthorizationClaim.ModerationWarn },
-                {InfractionType.Mute, AuthorizationClaim.ModerationMute },
-                {InfractionType.Ban, AuthorizationClaim.ModerationBan }
+                { InfractionType.Notice, AuthorizationClaim.ModerationNote },
+                { InfractionType.Warning, AuthorizationClaim.ModerationWarn },
+                { InfractionType.Mute, AuthorizationClaim.ModerationMute },
+                { InfractionType.Softban, AuthorizationClaim.ModerationSoftban },
+                { InfractionType.Ban, AuthorizationClaim.ModerationBan }
             };
     }
 }

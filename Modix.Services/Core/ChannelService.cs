@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System.Linq;
+using System.Threading.Tasks;
 
 using Discord;
 
@@ -27,7 +28,10 @@ namespace Modix.Services.Core
         /// Constructs a new <see cref="ChannelService"/> with the given injected dependencies.
         /// </summary>
         /// <param name="discordClient">The value to use for <see cref="DiscordClient"/>.</param>
-        public ChannelService(IDiscordClient discordClient, IGuildChannelRepository guildChannelRepository)
+        public ChannelService(
+            IDiscordClient discordClient,
+            IGuildChannelRepository guildChannelRepository,
+            ISelfUser selfUser)
         {
             DiscordClient = discordClient;
             GuildChannelRepository = guildChannelRepository;
@@ -55,6 +59,36 @@ namespace Modix.Services.Core
             }
         }
 
+        public async Task<bool> CanManageChannelAsync(IGuildChannel channel)
+        {
+            var potentialUserPermissions = channel.GetPermissionOverwrite(SelfUser);
+
+            if (potentialUserPermissions is OverwritePermissions userPermissions)
+            {
+                if (userPermissions.ManageChannel == PermValue.Allow)
+                {
+                    return true;
+                }
+                else if (userPermissions.ManageChannel == PermValue.Deny)
+                {
+                    return false;
+                }
+            }
+
+            var selfGuildUser = await channel.Guild.GetUserAsync(SelfUser.Id);
+
+            var relevantChannelRolePermissions = channel.PermissionOverwrites
+                .Where(x => x.TargetType == PermissionTarget.Role)
+                .Join(selfGuildUser.RoleIds, x => x.TargetId, x => x, (p, r) => p.Permissions);
+
+            if (relevantChannelRolePermissions.Any(x => x.ManageChannel == PermValue.Allow))
+            {
+                return true;
+            }
+
+
+        }
+
         /// <summary>
         /// An <see cref="IDiscordClient"/> to be used to interact with the Discord API.
         /// </summary>
@@ -64,5 +98,10 @@ namespace Modix.Services.Core
         /// An <see cref="IGuildChannelRepository"/> to be used to interact with channel data within a datastore.
         /// </summary>
         internal protected IGuildChannelRepository GuildChannelRepository { get; }
+
+        /// <summary>
+        /// The user that the bot is currently running as.
+        /// </summary>
+        internal protected ISelfUser SelfUser { get; }
     }
 }

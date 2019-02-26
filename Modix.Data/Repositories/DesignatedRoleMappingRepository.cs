@@ -41,9 +41,9 @@ namespace Modix.Data.Repositories
         /// <exception cref="ArgumentNullException">Throws for <paramref name="data"/>.</exception>
         /// <returns>
         /// A <see cref="Task"/> which will complete when the operation is complete,
-        /// containing the auto-generated <see cref="DesignatedRoleMappingEntity.Id"/> value assigned to the new mapping.
+        /// containing the mapping that was created.
         /// </returns>
-        Task<long> CreateAsync(DesignatedRoleMappingCreationData data);
+        Task<DesignatedRoleMappingBrief> CreateAsync(DesignatedRoleMappingCreationData data);
 
         /// <summary>
         /// Checks whether any mappings exist within the repository, according to an arbitrary set of criteria.
@@ -105,7 +105,7 @@ namespace Modix.Data.Repositories
             => _deleteTransactionFactory.BeginTransactionAsync(ModixContext.Database);
 
         /// <inheritdoc />
-        public async Task<long> CreateAsync(DesignatedRoleMappingCreationData data)
+        public async Task<DesignatedRoleMappingBrief> CreateAsync(DesignatedRoleMappingCreationData data)
         {
             if (data == null)
                 throw new ArgumentNullException(nameof(data));
@@ -118,7 +118,7 @@ namespace Modix.Data.Repositories
             entity.CreateAction.DesignatedRoleMappingId = entity.Id;
             await ModixContext.SaveChangesAsync();
 
-            return entity.Id;
+            return DesignatedRoleMappingBrief.FromEntity(entity);
         }
 
         /// <inheritdoc />

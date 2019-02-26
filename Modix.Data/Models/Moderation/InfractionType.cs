@@ -18,6 +18,10 @@
         /// </summary>
         Mute,
         /// <summary>
+        /// Describes an infraction where the user was softbanned from a guild.
+        /// </summary>
+        Softban,
+        /// <summary>
         /// Describes an infraction where the user was banned from a guild.
         /// </summary>
         Ban,

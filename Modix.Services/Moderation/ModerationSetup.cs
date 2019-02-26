@@ -34,6 +34,7 @@ namespace Modix.Services.Moderation
                 .AddScoped<INotificationHandler<ChatMessageReceived>, ModerationInvitePurgingHandler>()
                 .AddScoped<INotificationHandler<ChatMessageUpdated>, ModerationInvitePurgingHandler>()
                 .AddScoped<INotificationHandler<UserJoined>, MutePersistingHandler>()
-                .AddScoped<INotificationHandler<UserBanned>, InfractionSyncingHandler>();
+                .AddScoped<INotificationHandler<UserBanned>, InfractionSyncingHandler>()
+                .AddScoped<INotificationHandler<UserJoined>, ModerationRolePersistingHandler>();
     }
 }

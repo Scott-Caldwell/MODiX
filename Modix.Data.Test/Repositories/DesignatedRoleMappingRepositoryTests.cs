@@ -199,7 +199,7 @@ namespace Modix.Data.Test.Repositories
         {
             (var modixContext, var uut) = BuildTestContext();
 
-            var id = await uut.CreateAsync(data);
+            var id = (await uut.CreateAsync(data)).Id;
 
             modixContext.DesignatedRoleMappings.ShouldContain(x => x.Id == id);
             var designatedRoleMapping = modixContext.DesignatedRoleMappings.First(x => x.Id == id);
