@@ -74,7 +74,7 @@ namespace Microsoft.EntityFrameworkCore
 
             var entity = context.Model.FindEntityType(typeof(TEntity).FullName);
 
-            if (entity.IsQueryType)
+            if (entity.FindPrimaryKey() is null)
                 throw new ArgumentException($"{entity.Name} is a query record, not a table record.", nameof(tableSelector));
 
             if (!(propertySelector.Body is MemberExpression memberSelector) || (memberSelector.Member.MemberType != MemberTypes.Property))

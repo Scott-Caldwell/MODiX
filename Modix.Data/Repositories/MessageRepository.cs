@@ -131,7 +131,7 @@ namespace Modix.Data.Repositories
 
         public async Task<GuildUserParticipationStatistics> GetGuildUserParticipationStatistics(ulong guildId, ulong userId)
         {
-            var stats = await ModixContext.Query<GuildUserParticipationStatistics>()
+            var stats = await ModixContext.Set<GuildUserParticipationStatistics>()
                 .AsNoTracking()
                 .FromSql(
                     @"with msgs as (
