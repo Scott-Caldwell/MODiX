@@ -15,8 +15,9 @@ using Modix.Auth;
 using Modix.Configuration;
 using Modix.Data;
 using Modix.Data.Models.Core;
-using Modix.Services.CodePaste;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
+using Newtonsoft.Json.Serialization;
 using Serilog;
 
 namespace Modix
@@ -65,7 +66,12 @@ namespace Modix
                 .AddModix();
 
             services.AddMvc()
-                .SetCompatibilityVersion(CompatibilityVersion.Latest);
+                .SetCompatibilityVersion(CompatibilityVersion.Version_3_0)
+                .AddNewtonsoftJson(options =>
+                {
+                    options.SerializerSettings.Converters.Add(new StringEnumConverter());
+                    options.SerializerSettings.Converters.Add(new StringULongConverter());
+                });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -77,40 +83,35 @@ namespace Modix
             }
 
             app.UseAuthentication();
+            app.UseAuthorization();
             app.UseResponseCompression();
 
-            //Static redirect for invite link
-            app.Map("/invite", builder =>
-            {
-                builder.Run(handler =>
-                {
-                    //TODO: Maybe un-hardcode this?
-                    //handler.Response.StatusCode = StatusCodes
+            app.UseDefaultFiles();
+            app.UseStaticFiles();
 
-                    handler.Response.Redirect("https://aka.ms/csharp-discord");
+            app.UseRouting();
+            app.UseEndpoints(builder =>
+            {
+                // Static redirect for invite link
+                builder.Map("/invite", context =>
+                {
+                    // TODO: Maybe un-hardcode this?
+                    context.Response.Redirect("https://aka.ms/csharp-discord");
                     return Task.CompletedTask;
                 });
-            });
 
-            //Map to static files when not hitting the API
-            app.MapWhen(x => !x.Request.Path.Value.StartsWith("/api"), builder =>
-            {
-                //Tiny middleware to redirect invalid requests to index.html,
-                //this ensures that our frontend routing works on fresh requests
-                builder.Use(async (context, next) =>
+                builder.Map("/{non-api:regex([^(?:api/?)])}", context =>
                 {
-                    await next();
                     if (context.Response.StatusCode == 404 && !Path.HasExtension(context.Request.Path.Value))
                     {
                         context.Request.Path = "/index.html";
-                        await next();
                     }
-                })
-                .UseDefaultFiles()
-                .UseStaticFiles();
-            });
 
-            app.UseRouting();
+                    return Task.CompletedTask;
+                });
+
+                builder.MapControllers();
+            });
         }
     }
 }

@@ -1,13 +1,17 @@
-﻿using System;
+﻿extern alias reactive;
+
+using System;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Collections;
 using System.Collections.Generic;
 using System.Threading;
 
+using ReactiveIAsyncEnumerable = reactive.System.Collections.Generic;
+
 namespace Modix.Data.ExpandableQueries
 {
-    public class ExpandableQuery<T> : IOrderedQueryable<T>, IAsyncEnumerable<T>
+    public class ExpandableQuery<T> : IOrderedQueryable<T>, IAsyncEnumerable<T>, ReactiveIAsyncEnumerable.IAsyncEnumerable<T>
     {
         public ExpandableQuery(ExpandableQueryProvider provider, Expression expression)
         {
@@ -24,6 +28,9 @@ namespace Modix.Data.ExpandableQueries
 
         public IAsyncEnumerator<T> GetAsyncEnumerator(CancellationToken cancellationToken = default)
             => _provider.ExecuteAsync<IAsyncEnumerable<T>>(Expression).GetAsyncEnumerator(cancellationToken);
+
+        ReactiveIAsyncEnumerable.IAsyncEnumerator<T> ReactiveIAsyncEnumerable.IAsyncEnumerable<T>.GetEnumerator()
+            => _provider.ExecuteAsync<ReactiveIAsyncEnumerable.IAsyncEnumerable<T>>(Expression).GetEnumerator();
 
         public Type ElementType { get; }
 

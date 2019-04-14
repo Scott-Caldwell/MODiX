@@ -17,14 +17,12 @@ namespace Modix.Auth
     public class ModixAuthenticationHandler : DiscordAuthenticationHandler
     {
         private readonly DiscordSocketClient _client;
-        private readonly IOptions<ModixConfig> _config;
 
         public ModixAuthenticationHandler(IOptionsMonitor<DiscordAuthenticationOptions> options, ILoggerFactory logger, UrlEncoder encoder, ISystemClock clock,
             DiscordSocketClient client, IOptions<ModixConfig> config)
             : base(options, logger, encoder, clock)
         {
             _client = client;
-            _config = config;
 
             options.CurrentValue.ClientId = config.Value.DiscordClientId;
             options.CurrentValue.ClientSecret = config.Value.DiscordClientSecret;

@@ -129,16 +129,11 @@ namespace Modix.Data.Repositories
 
         /// <inheritdoc />
         public async Task<IReadOnlyCollection<DesignatedRoleMappingBrief>> SearchBriefsAsync(DesignatedRoleMappingSearchCriteria criteria)
-        {
-            var a = ModixContext.DesignatedRoleMappings.AsNoTracking();
-            var b = a.FilterBy(criteria);
-            var c = b.AsExpandable();
-            var q = await c.ToArrayAsync();
-            //var d = c.Select(DesignatedRoleMappingBrief.FromEntityProjection);
-            //var e = d.ToArrayAsync();
-            //var f = await e;
-            return null;
-        }
+            => await ModixContext.DesignatedRoleMappings.AsNoTracking()
+                .FilterBy(criteria)
+                .AsExpandable()
+                .Select(DesignatedRoleMappingBrief.FromEntityProjection)
+                .ToArrayAsync();
 
         /// <inheritdoc />
         public async Task<int> DeleteAsync(DesignatedRoleMappingSearchCriteria criteria, ulong deletedById)
