@@ -1,7 +1,12 @@
-﻿using System;
+﻿extern alias reactive;
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+
+using ReactiveIAsyncEnumerable = reactive.System.Collections.Generic;
+using ReactiveLinq = reactive.System.Linq;
 
 namespace Discord.Rest
 {
@@ -68,9 +73,9 @@ namespace Discord.Rest
                 ?.Abstract();
 
         /// <inheritdoc />
-        IAsyncEnumerable<IReadOnlyCollection<IGuildUser>> IGuildChannel.GetUsersAsync(CacheMode mode, RequestOptions options)
-            => (RestGuildChannel as IGuildChannel).GetUsersAsync(mode, options)
-                .Select(x => x
+        ReactiveIAsyncEnumerable.IAsyncEnumerable<IReadOnlyCollection<IGuildUser>> IGuildChannel.GetUsersAsync(CacheMode mode, RequestOptions options)
+            => ReactiveLinq.AsyncEnumerable.Select((RestGuildChannel as IGuildChannel).GetUsersAsync(mode, options),
+                x => x
                     .Select(GuildUserAbstractionExtensions.Abstract)
                     .ToArray());
 

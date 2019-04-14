@@ -1,10 +1,15 @@
-﻿using System;
+﻿extern alias reactive;
+
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
 using Discord.WebSocket;
+
+using ReactiveIAsyncEnumerable = reactive.System.Collections.Generic;
+using ReactiveLinq = reactive.System.Linq;
 
 namespace Discord.Rest
 {
@@ -42,10 +47,10 @@ namespace Discord.Rest
         Task<IReadOnlyCollection<IRestGuild>> GetGuildsAsync(RequestOptions options = null);
 
         /// <inheritdoc cref="DiscordRestClient.GetGuildSummariesAsync(ulong, int, RequestOptions)" />
-        IAsyncEnumerable<IReadOnlyCollection<IRestUserGuild>> GetGuildSummariesAsync(ulong fromGuildId, int limit, RequestOptions options = null);
+        ReactiveIAsyncEnumerable.IAsyncEnumerable<IReadOnlyCollection<IRestUserGuild>> GetGuildSummariesAsync(ulong fromGuildId, int limit, RequestOptions options = null);
 
         /// <inheritdoc cref="DiscordRestClient.GetGuildSummariesAsync(RequestOptions)" />
-        IAsyncEnumerable<IReadOnlyCollection<IRestUserGuild>> GetGuildSummariesAsync(RequestOptions options = null);
+        ReactiveIAsyncEnumerable.IAsyncEnumerable<IReadOnlyCollection<IRestUserGuild>> GetGuildSummariesAsync(RequestOptions options = null);
 
         /// <inheritdoc cref="DiscordRestClient.GetGuildUserAsync(ulong, ulong, RequestOptions)" />
         Task<IRestGuildUser> GetGuildUserAsync(ulong guildId, ulong id, RequestOptions options = null);
@@ -131,16 +136,16 @@ namespace Discord.Rest
                 .ToArray();
 
         /// <inheritdoc />
-        public IAsyncEnumerable<IReadOnlyCollection<IRestUserGuild>> GetGuildSummariesAsync(ulong fromGuildId, int limit, RequestOptions options = null)
-            => DiscordRestClient.GetGuildSummariesAsync(fromGuildId, limit, options)
-                .Select(x => x
+        public ReactiveIAsyncEnumerable.IAsyncEnumerable<IReadOnlyCollection<IRestUserGuild>> GetGuildSummariesAsync(ulong fromGuildId, int limit, RequestOptions options = null)
+            => ReactiveLinq.AsyncEnumerable.Select(DiscordRestClient.GetGuildSummariesAsync(fromGuildId, limit, options),
+                x => x
                     .Select(RestUserGuildAbstractionExtensions.Abstract)
                     .ToArray());
 
         /// <inheritdoc />
-        public IAsyncEnumerable<IReadOnlyCollection<IRestUserGuild>> GetGuildSummariesAsync(RequestOptions options = null)
-            => DiscordRestClient.GetGuildSummariesAsync(options)
-                .Select(x => x
+        public ReactiveIAsyncEnumerable.IAsyncEnumerable<IReadOnlyCollection<IRestUserGuild>> GetGuildSummariesAsync(RequestOptions options = null)
+            => ReactiveLinq.AsyncEnumerable.Select(DiscordRestClient.GetGuildSummariesAsync(options),
+                x => x
                     .Select(RestUserGuildAbstractionExtensions.Abstract)
                     .ToArray());
 

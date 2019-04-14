@@ -1,7 +1,12 @@
-﻿using System;
+﻿extern alias reactive;
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+
+using ReactiveIAsyncEnumerable = reactive.System.Collections.Generic;
+using ReactiveLinq = reactive.System.Linq;
 
 namespace Discord.WebSocket
 {
@@ -90,9 +95,9 @@ namespace Discord.WebSocket
                 ?.Abstract();
 
         /// <inheritdoc />
-        IAsyncEnumerable<IReadOnlyCollection<IGuildUser>> IGuildChannel.GetUsersAsync(CacheMode mode, RequestOptions options)
-            => (SocketGuildChannel as IGuildChannel).GetUsersAsync(mode, options)
-                .Select(x => x
+        ReactiveIAsyncEnumerable.IAsyncEnumerable<IReadOnlyCollection<IGuildUser>> IGuildChannel.GetUsersAsync(CacheMode mode, RequestOptions options)
+            => ReactiveLinq.AsyncEnumerable.Select((SocketGuildChannel as IGuildChannel).GetUsersAsync(mode, options),
+                x => x
                     .Select(GuildUserAbstractionExtensions.Abstract)
                     .ToArray());
 

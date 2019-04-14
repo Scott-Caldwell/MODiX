@@ -1,7 +1,12 @@
-﻿using System;
+﻿extern alias reactive;
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+
+using ReactiveIAsyncEnumerable = reactive.System.Collections.Generic;
+using ReactiveLinq = reactive.System.Linq;
 
 namespace Discord.WebSocket
 {
@@ -39,9 +44,9 @@ namespace Discord.WebSocket
             => SocketUserMessage.AddReactionAsync(emote, options);
 
         /// <inheritdoc />
-        public IAsyncEnumerable<IReadOnlyCollection<IUser>> GetReactionUsersAsync(IEmote emoji, int limit, RequestOptions options = null)
-            => SocketUserMessage.GetReactionUsersAsync(emoji, limit, options)
-                .Select(x => x
+        public ReactiveIAsyncEnumerable.IAsyncEnumerable<IReadOnlyCollection<IUser>> GetReactionUsersAsync(IEmote emoji, int limit, RequestOptions options = null)
+            => ReactiveLinq.AsyncEnumerable.Select(SocketUserMessage.GetReactionUsersAsync(emoji, limit, options),
+                x => x
                     .Select(UserAbstractionExtensions.Abstract)
                     .ToArray());
 

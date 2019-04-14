@@ -1,7 +1,11 @@
-﻿using System;
+﻿extern alias reactive;
+
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
+
+using ReactiveIAsyncEnumerable = reactive.System.Collections.Generic;
 
 namespace Discord.Rest
 {
@@ -12,13 +16,13 @@ namespace Discord.Rest
         Task<IRestMessage> GetMessageAsync(ulong id, RequestOptions options = null);
 
         /// <inheritdoc cref="IRestMessageChannel.GetMessagesAsync(int, RequestOptions)" />
-        IAsyncEnumerable<IReadOnlyCollection<IRestMessage>> GetMessagesAsync(int limit = 100, RequestOptions options = null);
+        ReactiveIAsyncEnumerable.IAsyncEnumerable<IReadOnlyCollection<IRestMessage>> GetMessagesAsync(int limit = 100, RequestOptions options = null);
 
         /// <inheritdoc cref="IRestMessageChannel.GetMessagesAsync(ulong, Direction, int, RequestOptions)" />
-        IAsyncEnumerable<IReadOnlyCollection<IRestMessage>> GetMessagesAsync(ulong fromMessageId, Direction dir, int limit = 100, RequestOptions options = null);
+        ReactiveIAsyncEnumerable.IAsyncEnumerable<IReadOnlyCollection<IRestMessage>> GetMessagesAsync(ulong fromMessageId, Direction dir, int limit = 100, RequestOptions options = null);
 
         /// <inheritdoc cref="IRestMessageChannel.GetMessagesAsync(IMessage, Direction, int, RequestOptions)" />
-        IAsyncEnumerable<IReadOnlyCollection<IRestMessage>> GetMessagesAsync(IMessage fromMessage, Direction dir, int limit = 100, RequestOptions options = null);
+        ReactiveIAsyncEnumerable.IAsyncEnumerable<IReadOnlyCollection<IRestMessage>> GetMessagesAsync(IMessage fromMessage, Direction dir, int limit = 100, RequestOptions options = null);
 
         /// <inheritdoc cref="IRestMessageChannel.GetPinnedMessagesAsync(RequestOptions)" />
         new Task<IReadOnlyCollection<IRestMessage>> GetPinnedMessagesAsync(RequestOptions options = null);

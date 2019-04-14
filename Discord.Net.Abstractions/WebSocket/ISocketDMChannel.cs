@@ -1,10 +1,15 @@
-﻿using System;
+﻿extern alias reactive;
+
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
 using Discord.Rest;
+
+using ReactiveIAsyncEnumerable = reactive.System.Collections.Generic;
+using ReactiveLinq = reactive.System.Linq;
 
 namespace Discord.WebSocket
 {
@@ -36,13 +41,13 @@ namespace Discord.WebSocket
         Task<IMessage> GetMessageAsync(ulong id, RequestOptions options = null);
 
         /// <inheritdoc cref="SocketDMChannel.GetMessagesAsync(ulong, Direction, int, RequestOptions)" />
-        IAsyncEnumerable<IReadOnlyCollection<IMessage>> GetMessagesAsync(ulong fromMessageId, Direction dir, int limit = 100, RequestOptions options = null);
+        ReactiveIAsyncEnumerable.IAsyncEnumerable<IReadOnlyCollection<IMessage>> GetMessagesAsync(ulong fromMessageId, Direction dir, int limit = 100, RequestOptions options = null);
 
         /// <inheritdoc cref="SocketDMChannel.GetMessagesAsync(IMessage, Direction, int, RequestOptions)" />
-        IAsyncEnumerable<IReadOnlyCollection<IMessage>> GetMessagesAsync(IMessage fromMessage, Direction dir, int limit = 100, RequestOptions options = null);
+        ReactiveIAsyncEnumerable.IAsyncEnumerable<IReadOnlyCollection<IMessage>> GetMessagesAsync(IMessage fromMessage, Direction dir, int limit = 100, RequestOptions options = null);
 
         /// <inheritdoc cref="SocketDMChannel.GetMessagesAsync(int, RequestOptions)" />
-        IAsyncEnumerable<IReadOnlyCollection<IMessage>> GetMessagesAsync(int limit = 100, RequestOptions options = null);
+        ReactiveIAsyncEnumerable.IAsyncEnumerable<IReadOnlyCollection<IMessage>> GetMessagesAsync(int limit = 100, RequestOptions options = null);
 
         /// <inheritdoc cref="SocketDMChannel.GetPinnedMessagesAsync(RequestOptions)" />
         new Task<IReadOnlyCollection<IRestMessage>> GetPinnedMessagesAsync(RequestOptions options = null);
@@ -151,44 +156,44 @@ namespace Discord.WebSocket
                 ?.Abstract();
 
         /// <inheritdoc />
-        public IAsyncEnumerable<IReadOnlyCollection<IMessage>> GetMessagesAsync(int limit = 100, RequestOptions options = null)
-            => SocketDMChannel.GetMessagesAsync(limit, options)
-                .Select(x => x
+        public ReactiveIAsyncEnumerable.IAsyncEnumerable<IReadOnlyCollection<IMessage>> GetMessagesAsync(int limit = 100, RequestOptions options = null)
+            => ReactiveLinq.AsyncEnumerable.Select(SocketDMChannel.GetMessagesAsync(limit, options),
+                x => x
                     .Select(MessageAbstractionExtensions.Abstract)
                     .ToArray());
 
         /// <inheritdoc />
-        public IAsyncEnumerable<IReadOnlyCollection<IMessage>> GetMessagesAsync(int limit = 100, CacheMode mode = CacheMode.AllowDownload, RequestOptions options = null)
-            => (SocketDMChannel as IMessageChannel).GetMessagesAsync(limit, mode, options)
-                .Select(x => x
+        public ReactiveIAsyncEnumerable.IAsyncEnumerable<IReadOnlyCollection<IMessage>> GetMessagesAsync(int limit = 100, CacheMode mode = CacheMode.AllowDownload, RequestOptions options = null)
+            => ReactiveLinq.AsyncEnumerable.Select((SocketDMChannel as IMessageChannel).GetMessagesAsync(limit, mode, options),
+                x => x
                     .Select(MessageAbstractionExtensions.Abstract)
                     .ToArray());
 
         /// <inheritdoc />
-        public IAsyncEnumerable<IReadOnlyCollection<IMessage>> GetMessagesAsync(ulong fromMessageId, Direction dir, int limit = 100, RequestOptions options = null)
-            => SocketDMChannel.GetMessagesAsync(fromMessageId, dir, limit, options)
-                .Select(x => x
+        public ReactiveIAsyncEnumerable.IAsyncEnumerable<IReadOnlyCollection<IMessage>> GetMessagesAsync(ulong fromMessageId, Direction dir, int limit = 100, RequestOptions options = null)
+            => ReactiveLinq.AsyncEnumerable.Select(SocketDMChannel.GetMessagesAsync(fromMessageId, dir, limit, options),
+                x => x
                     .Select(MessageAbstractionExtensions.Abstract)
                     .ToArray());
 
         /// <inheritdoc />
-        public IAsyncEnumerable<IReadOnlyCollection<IMessage>> GetMessagesAsync(ulong fromMessageId, Direction dir, int limit = 100, CacheMode mode = CacheMode.AllowDownload, RequestOptions options = null)
-            => (SocketDMChannel as IMessageChannel).GetMessagesAsync(fromMessageId, dir, limit, mode, options)
-                .Select(x => x
+        public ReactiveIAsyncEnumerable.IAsyncEnumerable<IReadOnlyCollection<IMessage>> GetMessagesAsync(ulong fromMessageId, Direction dir, int limit = 100, CacheMode mode = CacheMode.AllowDownload, RequestOptions options = null)
+            => ReactiveLinq.AsyncEnumerable.Select((SocketDMChannel as IMessageChannel).GetMessagesAsync(fromMessageId, dir, limit, mode, options),
+                x => x
                     .Select(MessageAbstractionExtensions.Abstract)
                     .ToArray());
 
         /// <inheritdoc />
-        public IAsyncEnumerable<IReadOnlyCollection<IMessage>> GetMessagesAsync(IMessage fromMessage, Direction dir, int limit = 100, RequestOptions options = null)
-            => SocketDMChannel.GetMessagesAsync(fromMessage, dir, limit, options)
-                .Select(x => x
+        public ReactiveIAsyncEnumerable.IAsyncEnumerable<IReadOnlyCollection<IMessage>> GetMessagesAsync(IMessage fromMessage, Direction dir, int limit = 100, RequestOptions options = null)
+            => ReactiveLinq.AsyncEnumerable.Select(SocketDMChannel.GetMessagesAsync(fromMessage, dir, limit, options),
+                x => x
                     .Select(MessageAbstractionExtensions.Abstract)
                     .ToArray());
 
         /// <inheritdoc />
-        public IAsyncEnumerable<IReadOnlyCollection<IMessage>> GetMessagesAsync(IMessage fromMessage, Direction dir, int limit = 100, CacheMode mode = CacheMode.AllowDownload, RequestOptions options = null)
-            => (SocketDMChannel as IMessageChannel).GetMessagesAsync(fromMessage, dir, limit, mode, options)
-                .Select(x => x
+        public ReactiveIAsyncEnumerable.IAsyncEnumerable<IReadOnlyCollection<IMessage>> GetMessagesAsync(IMessage fromMessage, Direction dir, int limit = 100, CacheMode mode = CacheMode.AllowDownload, RequestOptions options = null)
+            => ReactiveLinq.AsyncEnumerable.Select((SocketDMChannel as IMessageChannel).GetMessagesAsync(fromMessage, dir, limit, mode, options),
+                x => x
                     .Select(MessageAbstractionExtensions.Abstract)
                     .ToArray());
 

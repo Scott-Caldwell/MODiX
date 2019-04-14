@@ -1,9 +1,14 @@
-﻿using System;
+﻿extern alias reactive;
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
 using Discord.Audio;
+
+using ReactiveIAsyncEnumerable = reactive.System.Collections.Generic;
+using ReactiveLinq = reactive.System.Linq;
 
 namespace Discord.Rest
 {
@@ -48,7 +53,7 @@ namespace Discord.Rest
         Task<IRestVoiceChannel> GetAFKChannelAsync(RequestOptions options = null);
 
         /// <inheritdoc cref="RestGuild.GetAuditLogsAsync(int, RequestOptions)" />
-        IAsyncEnumerable<IReadOnlyCollection<IRestAuditLogEntry>> GetAuditLogsAsync(int limit, RequestOptions options = null);
+        ReactiveIAsyncEnumerable.IAsyncEnumerable<IReadOnlyCollection<IRestAuditLogEntry>> GetAuditLogsAsync(int limit, RequestOptions options = null);
 
         /// <inheritdoc cref="RestGuild.GetBanAsync(ulong, RequestOptions)" />
         new Task<IBan> GetBanAsync(ulong userId, RequestOptions options = null);
@@ -105,7 +110,7 @@ namespace Discord.Rest
         Task<IRestGuildUser> GetUserAsync(ulong id, RequestOptions options = null);
 
         /// <inheritdoc cref="RestGuild.GetUsersAsync(RequestOptions)" />
-        IAsyncEnumerable<IReadOnlyCollection<IRestGuildUser>> GetUsersAsync(RequestOptions options = null);
+        ReactiveIAsyncEnumerable.IAsyncEnumerable<IReadOnlyCollection<IRestGuildUser>> GetUsersAsync(RequestOptions options = null);
 
         /// <inheritdoc cref="RestGuild.GetVanityInviteAsync(RequestOptions)" />
         new Task<IRestInviteMetadata> GetVanityInviteAsync(RequestOptions options = null);
@@ -375,9 +380,9 @@ namespace Discord.Rest
                 ?.Abstract();
 
         /// <inheritdoc />
-        public IAsyncEnumerable<IReadOnlyCollection<IRestAuditLogEntry>> GetAuditLogsAsync(int limit, RequestOptions options = null)
-            => RestGuild.GetAuditLogsAsync(limit, options)
-                .Select(x => x
+        public ReactiveIAsyncEnumerable.IAsyncEnumerable<IReadOnlyCollection<IRestAuditLogEntry>> GetAuditLogsAsync(int limit, RequestOptions options = null)
+            => ReactiveLinq.AsyncEnumerable.Select(RestGuild.GetAuditLogsAsync(limit, options),
+                x => x
                     .Select(RestAuditLogEntryAbstractionExtensions.Abstract)
                     .ToArray());
 
@@ -557,9 +562,9 @@ namespace Discord.Rest
                 ?.Abstract();
 
         /// <inheritdoc />
-        public IAsyncEnumerable<IReadOnlyCollection<IRestGuildUser>> GetUsersAsync(RequestOptions options = null)
-            => RestGuild.GetUsersAsync(options)
-                .Select(x => x
+        public ReactiveIAsyncEnumerable.IAsyncEnumerable<IReadOnlyCollection<IRestGuildUser>> GetUsersAsync(RequestOptions options = null)
+            => ReactiveLinq.AsyncEnumerable.Select(RestGuild.GetUsersAsync(options),
+                x => x
                     .Select(RestGuildUserAbstractionExtensions.Abstract)
                     .ToArray());
 

@@ -80,7 +80,7 @@ namespace Modix.Data.Repositories
             var earliestDateTime = DateTimeOffset.UtcNow - timespan;
             var query = GetQuery();
 
-            var counts = await ModixContext.Query<PerUserMessageCount>()
+            var counts = await ModixContext.Set<PerUserMessageCount>()
                 .AsNoTracking()
                 .FromSql(query,
                     new NpgsqlParameter(":GuildId", NpgsqlDbType.Bigint) { Value = unchecked((long)guildId) },
