@@ -82,7 +82,7 @@ namespace Modix.Data.Repositories
 
             var counts = await ModixContext.Set<PerUserMessageCount>()
                 .AsNoTracking()
-                .FromSql(query,
+                .FromSqlRaw(query,
                     new NpgsqlParameter(":GuildId", NpgsqlDbType.Bigint) { Value = unchecked((long)guildId) },
                     new NpgsqlParameter(":UserId", NpgsqlDbType.Bigint) { Value = unchecked((long)userId) },
                     new NpgsqlParameter(":StartTimestamp", NpgsqlDbType.TimestampTz) { Value = earliestDateTime })
@@ -133,7 +133,7 @@ namespace Modix.Data.Repositories
         {
             var stats = await ModixContext.Set<GuildUserParticipationStatistics>()
                 .AsNoTracking()
-                .FromSql(
+                .FromSqlRaw(
                     @"with msgs as (
                         select ""AuthorId"", ""Id"" as ""MessageId"", ""GuildId""
                         from ""Messages""
