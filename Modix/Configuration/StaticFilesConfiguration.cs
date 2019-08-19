@@ -2,18 +2,19 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 
 namespace Modix.Configuration
 {
     public class StaticFilesConfiguration : IConfigureOptions<StaticFileOptions>
     {
-        private readonly IAntiforgery antiforgery;
-        private readonly IHostingEnvironment _env;
+        private readonly IAntiforgery _antiforgery;
+        private readonly IWebHostEnvironment _env;
 
-        public StaticFilesConfiguration(IAntiforgery antiforgery, IHostingEnvironment env)
+        public StaticFilesConfiguration(IAntiforgery antiforgery, IWebHostEnvironment env)
         {
-            this.antiforgery = antiforgery;
+            _antiforgery = antiforgery;
             _env = env;
         }
 
@@ -27,7 +28,7 @@ namespace Modix.Configuration
                 {
                     if (fileResponse.File.Name == "index.html")
                     {
-                        var tokens = antiforgery.GetAndStoreTokens(fileResponse.Context);
+                        var tokens = _antiforgery.GetAndStoreTokens(fileResponse.Context);
 
                         fileResponse.Context.Response.Cookies.Append(
                             "XSRF-TOKEN", tokens.RequestToken, new CookieOptions() { HttpOnly = false });

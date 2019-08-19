@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <RootNamespace>Discord</RootNamespace>
+    <TargetFramework>netstandard2.0</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>

@@ -20,9 +20,9 @@ namespace Microsoft.EntityFrameworkCore
         {
             var valueGenerator = GetGetResettableSequenceValueGenerator(context, tableSelector, propertySelector);
 
-            var table = tableSelector.Compile().Invoke(context).Local;
+            _ = tableSelector.Compile().Invoke(context).Local;
 
-            valueGenerator.SetValue(default(TProperty));
+            valueGenerator.SetValue(default);
         }
 
         public static void ResetSequenceToValue<TContext, TEntity, TProperty>(
@@ -35,7 +35,7 @@ namespace Microsoft.EntityFrameworkCore
         {
             var valueGenerator = GetGetResettableSequenceValueGenerator(context, tableSelector, propertySelector);
 
-            var table = tableSelector.Compile().Invoke(context).Local;
+            _ = tableSelector.Compile().Invoke(context).Local;
 
             valueGenerator.SetValue(value);
         }
@@ -53,7 +53,7 @@ namespace Microsoft.EntityFrameworkCore
 
             valueGenerator.SetValue(table.Any()
                 ? table.Max(propertySelector.Compile())
-                : default(TProperty));
+                : default);
         }
 
         private static ResettableSequenceValueGenerator<TProperty> GetGetResettableSequenceValueGenerator<TContext, TEntity, TProperty>(
@@ -74,7 +74,7 @@ namespace Microsoft.EntityFrameworkCore
 
             var entity = context.Model.FindEntityType(typeof(TEntity).FullName);
 
-            if (entity.IsQueryType)
+            if (entity.FindPrimaryKey() is null)
                 throw new ArgumentException($"{entity.Name} is a query record, not a table record.", nameof(tableSelector));
 
             if (!(propertySelector.Body is MemberExpression memberSelector) || (memberSelector.Member.MemberType != MemberTypes.Property))
@@ -93,7 +93,7 @@ namespace Microsoft.EntityFrameworkCore
                 as ResettableSequenceValueGenerator<TProperty>;
         }
 
-        private static Dictionary<Type, Func<IProperty, IEntityType, ValueGenerator>> _valueGeneratorConstructorsByValueType
+        private static readonly Dictionary<Type, Func<IProperty, IEntityType, ValueGenerator>> _valueGeneratorConstructorsByValueType
             = new Dictionary<Type, Func<IProperty, IEntityType, ValueGenerator>>()
             {
                 [typeof(long)] = (p, e) => new ResettableInt64SequenceValueGenerator()

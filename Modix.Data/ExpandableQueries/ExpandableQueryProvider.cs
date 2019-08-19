@@ -1,12 +1,10 @@
 ﻿using System;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Collections.Generic;
 using System.Reflection;
+using System.Threading;
 
 using Microsoft.EntityFrameworkCore.Query.Internal;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace Modix.Data.ExpandableQueries
 {
@@ -43,12 +41,12 @@ namespace Modix.Data.ExpandableQueries
         public object Execute(Expression expression)
             => _provider.Execute(Visit(expression));
 
-        public IAsyncEnumerable<TResult> ExecuteAsync<TResult>(Expression expression)
+        public TResult ExecuteAsync<TResult>(Expression expression)
             => (_provider is IAsyncQueryProvider asyncProvider)
                 ? asyncProvider.ExecuteAsync<TResult>(Visit(expression))
                 : throw new InvalidOperationException("This query cannot be executed asynchronously");
 
-        public Task<TResult> ExecuteAsync<TResult>(Expression expression, CancellationToken cancellationToken)
+        public TResult ExecuteAsync<TResult>(Expression expression, CancellationToken cancellationToken)
             => (_provider is IAsyncQueryProvider asyncProvider)
                 ? asyncProvider.ExecuteAsync<TResult>(Visit(expression), cancellationToken)
                 : throw new InvalidOperationException("This query cannot be executed asynchronously");
