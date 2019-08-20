@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -18,7 +19,7 @@ using Modix.Auth;
 using Modix.Configuration;
 using Modix.Data;
 using Modix.Data.Models.Core;
-
+using Modix.JsonConverters;
 using Serilog;
 
 namespace Modix
@@ -73,6 +74,11 @@ namespace Modix
                 .AddMvcOptions(options =>
                 {
                     options.EnableEndpointRouting = false;
+                })
+                .AddJsonOptions(options =>
+                {
+                    options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+                    options.JsonSerializerOptions.Converters.Add(new EnumDictionaryConverterFactory());
                 });
 
             services.AddStatsD(_hostingEnvironment, _configuration);
