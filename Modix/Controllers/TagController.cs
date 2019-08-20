@@ -56,7 +56,7 @@ namespace Modix.Controllers
         {
             try
             {
-                await TagService.CreateTagAsync(ModixUser.SelectedGuild, ModixUser.UserId, name, data.Content);
+                await TagService.CreateTagAsync(ModixUser.GetGuildIdAsUInt64(), ModixUser.GetUserIdAsUInt64(), name, data.Content);
             }
             catch (Exception ex)
             {
@@ -71,7 +71,7 @@ namespace Modix.Controllers
         {
             try
             {
-                await TagService.ModifyTagAsync(ModixUser.SelectedGuild, ModixUser.UserId, name, data.Content);
+                await TagService.ModifyTagAsync(ModixUser.GetGuildIdAsUInt64(), ModixUser.GetUserIdAsUInt64(), name, data.Content);
             }
             catch (Exception ex)
             {
@@ -86,7 +86,7 @@ namespace Modix.Controllers
         {
             try
             {
-                await TagService.DeleteTagAsync(ModixUser.SelectedGuild, ModixUser.UserId, name);
+                await TagService.DeleteTagAsync(ModixUser.GetGuildIdAsUInt64(), ModixUser.GetUserIdAsUInt64(), name);
             }
             catch (Exception ex)
             {

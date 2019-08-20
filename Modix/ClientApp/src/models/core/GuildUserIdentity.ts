@@ -1,6 +1,6 @@
 export default interface GuildUserIdentity
 {
-    id: number;
+    id: string;
     guildId: string;
     username: string;
     discriminator: string;

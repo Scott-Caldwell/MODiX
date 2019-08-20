@@ -9,10 +9,20 @@ namespace Modix.Models
     public class ModixUser
     {
         public string Name { get; set; }
-        public ulong UserId { get; set; }
+
+        public string UserId { get; set; }
+
         public string AvatarHash { get; set; }
+
         public List<string> Claims { get; set; }
-        public ulong SelectedGuild { get; set; }
+
+        public string SelectedGuild { get; set; }
+
+        public ulong GetUserIdAsUInt64()
+            => ulong.Parse(UserId);
+
+        public ulong GetGuildIdAsUInt64()
+            => ulong.Parse(SelectedGuild);
 
         public static ModixUser FromClaimsPrincipal(ClaimsPrincipal user)
         {
@@ -21,8 +31,8 @@ namespace Modix.Models
             var ret = new ModixUser
             {
                 Name = user.Identity.Name,
-                UserId = ulong.Parse(user.Claims.FirstOrDefault(d => d.Type == ClaimTypes.NameIdentifier).Value),
-                Claims = user.Claims.Where(d=>d.Type == ClaimTypes.Role).Select(d=>d.Value).ToList()
+                UserId = user.Claims.FirstOrDefault(d => d.Type == ClaimTypes.NameIdentifier).Value,
+                Claims = user.Claims.Where(d => d.Type == ClaimTypes.Role).Select(d => d.Value).ToList()
             };
 
             return ret;
@@ -33,7 +43,7 @@ namespace Modix.Models
             var ret = new ModixUser
             {
                 Name = user.GetFullUsername(),
-                UserId = user.Id,
+                UserId = user.Id.ToString(),
                 AvatarHash = user.GetAvatarUrl() ?? user.GetDefaultAvatarUrl()
             };
 

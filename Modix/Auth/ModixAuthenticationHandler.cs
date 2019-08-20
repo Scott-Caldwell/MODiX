@@ -33,7 +33,7 @@ namespace Modix.Auth
             var baseResult = await base.CreateTicketAsync(identity, properties, tokens);
             var result = ModixUser.FromClaimsPrincipal(baseResult.Principal);
 
-            var userWasfound = _client.Guilds.Any(d => d.GetUser(result.UserId) != null);
+            var userWasfound = _client.Guilds.Any(d => d.GetUser(result.GetUserIdAsUInt64()) != null);
 
             if (!userWasfound)
             {

@@ -11,13 +11,14 @@
 </template>
 
 <script lang="ts">
-import { Component, Prop } from 'vue-property-decorator';
+import * as _ from 'lodash';
+import { Component } from 'vue-property-decorator';
 import ModixComponent from '@/components/ModixComponent.vue';
 import UserSearch from '@/components/UserLookup/UserSearch.vue';
 import UserProfile from '@/components/UserLookup/UserProfile.vue';
-import * as _ from 'lodash';
 import EphemeralUser from '@/models/EphemeralUser';
 import UserService from '@/services/UserService';
+import store from "@/app/Store";
 
 @Component(
 {
@@ -33,7 +34,12 @@ export default class UserLookup extends ModixComponent
 
     async mounted()
     {
-        this.selectedUser = (await UserService.getUserInformation(this.$store.state.modix.user.userId))!;
+        const currentUser = store.currentUser();
+
+        if (currentUser)
+        {
+            this.selectedUser = await UserService.getUserInformation(currentUser.userId);
+        }
     }
 }
 </script>

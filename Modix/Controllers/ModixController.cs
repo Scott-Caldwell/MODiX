@@ -47,21 +47,21 @@ namespace Modix.Controllers
                 guildToSearch = DiscordSocketClient.Guilds.First();
             }
 
-            SocketUser = guildToSearch?.GetUser(ModixUser.UserId);
+            SocketUser = guildToSearch?.GetUser(ModixUser.GetUserIdAsUInt64());
 
             if (SocketUser == null) { await next(); return; }
 
-            await AssignClaims();
+            await AssignClaimsAsync();
 
             //Do it again here to assign claims (this is very lazy of us)
             ModixUser = ModixUser.FromClaimsPrincipal(HttpContext.User);
-            ModixUser.SelectedGuild = SocketUser.Guild.Id;
+            ModixUser.SelectedGuild = SocketUser.Guild.Id.ToString();
             ModixUser.AvatarHash = SocketUser.GetAvatarUrl() ?? SocketUser.GetDefaultAvatarUrl();
 
             await next();
         }
 
-        protected async Task AssignClaims()
+        protected async Task AssignClaimsAsync()
         {
             await ModixAuth.OnAuthenticatedAsync(SocketUser);
 
