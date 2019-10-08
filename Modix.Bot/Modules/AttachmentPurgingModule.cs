@@ -7,18 +7,18 @@ using Modix.Services.Moderation;
 
 namespace Modix.Modules
 {
-    [Name("Attachment Blacklist")]
-    [Summary("Retrieve information related to the attachment blacklist functionality.")]
-    public class AttachmentBlacklistModule : ModuleBase
+    [Name("Attachment Purging")]
+    [Summary("Retrieve information related to the attachment purging functionality.")]
+    public class AttachmentPurgingModule : ModuleBase
     {
-        [Command("attachment blacklist")]
-        [Summary("Retrieves the list of blacklisted attachment file extensions.")]
-        public async Task GetBlacklistAsync()
+        [Command("attachment whitelist")]
+        [Summary("Retrieves the list of whitelisted attachment file extensions.")]
+        public async Task GetWhitelistAsync()
         {
             var blacklistBuilder = new StringBuilder()
                 .AppendLine($"{Format.Bold("Blacklisted Extensions")}:")
                 .Append("```")
-                .AppendJoin(", ", AttachmentBlacklistBehavior.BlacklistedExtensions.OrderBy(d => d))
+                .AppendJoin(", ", AttachmentPurgingBehavior.WhitelistedExtensions.OrderBy(d => d))
                 .Append("```");
 
             await ReplyAsync(blacklistBuilder.ToString());

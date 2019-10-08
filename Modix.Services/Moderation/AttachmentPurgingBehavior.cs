@@ -8,67 +8,36 @@ using Serilog;
 
 namespace Modix.Services.Moderation
 {
-    public class AttachmentBlacklistBehavior : BehaviorBase
+    public class AttachmentPurgingBehavior : BehaviorBase
     {
-        public static readonly IReadOnlyCollection<string> BlacklistedExtensions = new[]
+        public static readonly IReadOnlyCollection<string> WhitelistedExtensions = new[]
         {
-            ".exe",
-            ".dll",
-            ".application",
-            ".msc",
-            ".bat",
-            ".pdb",
-            ".sh",
-            ".com",
-            ".scr",
-            ".msi",
-            ".cmd",
-            ".vbs",
-            ".js",
-            ".reg",
-            ".pif",
-            ".msp",
-            ".hta",
-            ".cpl",
-            ".jar",
-            ".vbe",
-            ".ws",
-            ".wsf",
-            ".wsc",
-            ".wsh",
-            ".ps1",
-            ".ps1xml",
-            ".ps2",
-            ".ps2xml",
-            ".psc1",
-            ".pasc2",
-            ".msh",
-            ".msh1",
-            ".msh2",
-            ".mshxml",
-            ".msh1xml",
-            ".msh2xml",
-            ".scf",
-            ".lnk",
-            ".inf",
-            ".doc",
-            ".xls",
-            ".ppt",
-            ".docm",
-            ".dotm",
-            ".xlsm",
-            ".xltm",
-            ".xlam",
-            ".pptm",
-            ".potm",
-            ".ppam",
-            ".ppsm",
-            ".sldn"
+            ".bmp",
+            ".cs",
+            ".fs",
+            ".gif",
+            ".gifv",
+            ".jpeg",
+            ".jpg",
+            ".json",
+            ".log",
+            ".mp4",
+            ".pdf",
+            ".png",
+            ".svg",
+            ".tif",
+            ".tiff",
+            ".txt",
+            ".vb",
+            ".xaml",
+            ".xml",
+            ".yaml",
+            ".yml",
         };
 
         private DiscordSocketClient DiscordClient { get; }
 
-        public AttachmentBlacklistBehavior(DiscordSocketClient discordClient, IServiceProvider serviceProvider) : base(serviceProvider)
+        public AttachmentPurgingBehavior(DiscordSocketClient discordClient, IServiceProvider serviceProvider) : base(serviceProvider)
         {
             DiscordClient = discordClient;
         }
@@ -81,8 +50,8 @@ namespace Modix.Services.Moderation
             if (!(message is IUserMessage userMessage) || !(userMessage.Author is IGuildUser || userMessage.Author.IsBot))
                 return;
 
-            // Check if the attachment's file name ends in anything suspicious first
-            if (!BlacklistedExtensions.Any(ext => message.Attachments.Any(m => m.Filename.ToLower().EndsWith(ext))))
+            // Ensure that the attachments are whitelisted
+            if (message.Attachments.All(x => WhitelistedExtensions.Any(ext => x.Filename.EndsWith(ext, StringComparison.OrdinalIgnoreCase))))
                 return;
 
             await TryDeleteAndReplyToUser(message);
