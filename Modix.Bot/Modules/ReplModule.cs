@@ -1,14 +1,11 @@
 ﻿using System;
 using System.IO;
-using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Text.RegularExpressions;
-using System.Threading;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
-using Discord.WebSocket;
 using Microsoft.Extensions.Options;
 using Modix.Data.Models.Core;
 using Modix.Services.AutoRemoveMessage;
@@ -62,9 +59,9 @@ namespace Modix.Modules
             [Summary("The code to execute.")]
                 string code)
         {
-            if (!(Context.Channel is IGuildChannel) || !(Context.User is IGuildUser guildUser))
+            if (Context.Channel is not IGuildChannel || !(Context.User is IGuildUser guildUser))
             {
-                await ModifyOrSendErrorEmbed("The REPL can only be executed in public guild channels.");
+                await ModifyOrSendErrorEmbedAsync("The REPL can only be executed in public guild channels.");
                 return;
             }
 
@@ -87,21 +84,21 @@ namespace Modix.Modules
             }
             catch (IOException ex)
             {
-                await ModifyOrSendErrorEmbed("Recieved an invalid response from the REPL service." +
+                await ModifyOrSendErrorEmbedAsync("Recieved an invalid response from the REPL service." +
                                              $"\n\n{Format.Bold("Details:")}\n{ex.Message}", message);
                 return;
             }
             catch (Exception ex)
             {
-                await ModifyOrSendErrorEmbed("An error occurred while sending a request to the REPL service. " +
+                await ModifyOrSendErrorEmbedAsync("An error occurred while sending a request to the REPL service. " +
                                              "This is probably due to container exhaustion - try again later." +
                                              $"\n\n{Format.Bold("Details:")}\n{ex.Message}", message);
                 return;
             }
 
-            if (!res.IsSuccessStatusCode & res.StatusCode != HttpStatusCode.BadRequest)
+            if (!res.IsSuccessStatusCode && res.StatusCode != HttpStatusCode.BadRequest)
             {
-                await ModifyOrSendErrorEmbed($"Status Code: {(int)res.StatusCode} {res.StatusCode}", message);
+                await ModifyOrSendErrorEmbedAsync($"Status Code: {(int)res.StatusCode} {res.StatusCode}", message);
                 return;
             }
 
@@ -122,7 +119,7 @@ namespace Modix.Modules
             await Context.Message.DeleteAsync();
         }
 
-        private async Task ModifyOrSendErrorEmbed(string error, IUserMessage message = null)
+        private async Task ModifyOrSendErrorEmbedAsync(string error, IUserMessage message = null)
         {
             var embed = new EmbedBuilder()
                 .WithTitle("REPL Error")
@@ -147,7 +144,10 @@ namespace Modix.Modules
 
         private async Task<EmbedBuilder> BuildEmbedAsync(IGuildUser guildUser, Result parsedResult)
         {
-            var returnValue = parsedResult.ReturnValue?.ToString() ?? " ";
+            var returnValue = parsedResult.ReturnValue?.ToString();
+            if (string.IsNullOrWhiteSpace(returnValue))
+                returnValue = " ";
+
             var consoleOut = parsedResult.ConsoleOut;
             var status = string.IsNullOrEmpty(parsedResult.Exception) ? "Success" : "Failure";
 
@@ -162,7 +162,7 @@ namespace Modix.Modules
             if (parsedResult.ReturnValue != null)
             {
                 embed.AddField(a => a.WithName($"Result: {parsedResult.ReturnTypeName ?? "null"}")
-                                     .WithValue(Format.Code($"{returnValue.TruncateTo(MaxFormattedFieldSize)}", "json")));
+                                     .WithValue(Format.Code(returnValue.TruncateTo(MaxFormattedFieldSize), "json")));
                 await embed.UploadToServiceIfBiggerThan(returnValue, "json", MaxFormattedFieldSize, _pasteService);
             }
 
